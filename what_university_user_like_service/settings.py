@@ -77,11 +77,11 @@ WSGI_APPLICATION = "what_university_user_like_service.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "django_test",
-        'USER': 'root',
-        'PASSWORD': 'password',
+        "NAME": "django_postgre",
+        'USER': 'khw7876',
+        'PASSWORD': '@kye09180',
         'HOST': 'localhost',
-        'PORT': '',
+        'PORT': '5432',
     }
 }
 
