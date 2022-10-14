@@ -1,4 +1,5 @@
 from django.db import models
+from user.models import User
 
 # Create your models here.
 class Country(models.Model):
@@ -20,9 +21,9 @@ class University(models.Model):
 
 class UniversityPreference(models.Model):
     university = models.ForeignKey(University, on_delete=models.SET_NULL, null=True)
-    user_id = models.PositiveIntegerField("사용자 id")
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField("생성 일시", auto_now_add=True)
     deleted_at = models.DateTimeField("삭제 일시", auto_now=True)
 
     def __str__(self):
-        return self.user_id
+        return self.user

@@ -3,8 +3,9 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 import requests, json
-
-from .models import Country, University
+from random import randrange
+from .models import Country, University, UniversityPreference
+from user.models import User
 # Create your views here.
 
 class UnivercityView(APIView):
@@ -31,5 +32,15 @@ class UnivercityView(APIView):
                 pass
             else:
                 University.objects.get_or_create(name=univercity_data["name"], webpage = univercity_data["web_pages"][0], country=country_id)
+
+        all_user_queryset = User.objects.all()
+
+        for user in all_user_queryset:
+            while user.universitypreference_set.count() <= 20:
+                UniversityPreference.objects.create(user = user, university_id = randrange(1,1000))
+
+        # preference_data = UniversityPreference.objects.all()
+        # for preference_obj in preference_data:
+        #     preference_obj.university.contry
 
         return Response({"detail": "정보 저장이 완료되었습니다."}, status=status.HTTP_200_OK)
