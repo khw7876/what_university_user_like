@@ -101,11 +101,11 @@ WSGI_APPLICATION = "what_university_user_like_service.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "django_postgre",
-        'USER': 'postgres',
-        'PASSWORD': '@kye09180',
-        'HOST': 'localhost',
-        'PORT': '',
+        "NAME": os.environ.get('POSTGRE_NAME'),
+        'USER': os.environ.get('POSTGRE_USER'),
+        'PASSWORD': os.environ.get('POSTGRE_PASSWORD'),
+        'HOST': os.environ.get('POSTGRE_HOST'),
+        'PORT': os.environ.get('POSTGRE_PORT'),
     }
 }
 
