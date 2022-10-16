@@ -29,25 +29,52 @@ class UnivercityView(APIView):
             if univercity_data["country"] not in country_name_list:
                 country_name_list.append(univercity_data["country"])
                 country_code_list.append(univercity_data['alpha_two_code'])
-        for index, A in enumerate (country_name_list): 
-            Country.objects.get_or_create(name = A, code = country_code_list[index])
+
+        for index, country_name in enumerate (country_name_list): 
+            getted_country, created_country = Country.objects.get_or_create(name = country_name, code = country_code_list[index])
+            if getted_country:
+                getted_country.country_score = 0
+                getted_country.save(update_fields=['country_score'])
 
         for univercity_data in data:
             country_id = Country.objects.get(name = univercity_data["country"])
             if University.objects.filter(name=univercity_data["name"]):
-                pass
+                University.objects.filter(name=univercity_data["name"]).update(university_score = 0)
             else:
                 University.objects.get_or_create(name=univercity_data["name"], webpage = univercity_data["web_pages"][0], country=country_id)
 
         all_user_queryset = User.objects.all()
 
+        # 각 유저당 20개의 선호 대학교를 지정해주는 로직
         for user in all_user_queryset:
             while user.universitypreference_set.count() <= 20:
-                UniversityPreference.objects.create(user = user, university_id = randrange(1,1000))
+                UniversityPreference.objects.create(user = user, university_id = randrange(1,9500))
 
-        # preference_data = UniversityPreference.objects.all()
-        # for preference_obj in preference_data:
-        #     preference_obj.university.contry
+        # 여기서부터 선호 대학교의 국가 가중치를 계산하고 저장하는 로직
+        preference_data = UniversityPreference.objects.all().select_related("university")
+        no_overlap_preference_univ_list = []
+        preference_univ_name_list = []
+        for preference_obj in preference_data:
+            if preference_obj.university.name not in preference_univ_name_list:
+                preference_univ_name_list.append(preference_obj.university.name)
+                no_overlap_preference_univ_list.append(preference_obj)
+
+        for preference_univ_obj in no_overlap_preference_univ_list:
+            country_query = Country.objects.filter(university__name = preference_univ_obj.university.name)
+            country_query.update(country_score = country_query.get().country_score + 1)
+
+        # 대학교점수(국가가중치 + 선호대학 가중치) 저장하는 로직
+        for preference_univ_name in preference_univ_name_list:
+            univ_preference_count = UniversityPreference.objects.filter(university__name=preference_univ_name).count()
+            univ_count_score = Country.objects.get(university__name = preference_univ_name).country_score
+
+            univ_obj = University.objects.get(name = preference_univ_name)
+
+            univ_obj.university_score = univ_preference_count + univ_count_score
+            univ_obj.save(update_fields=['university_score'])
+
+        
+
 
         return Response({"detail": "정보 저장이 완료되었습니다."}, status=status.HTTP_200_OK)
 

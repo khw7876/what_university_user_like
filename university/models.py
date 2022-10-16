@@ -5,6 +5,7 @@ from user.models import User
 class Country(models.Model):
     code = models.CharField("국가코드", max_length=2)
     name = models.CharField("국가 영문 이름", max_length=255)
+    country_score = models.PositiveIntegerField("국가가중치 점수", default=0)
     created_at = models.DateTimeField("생성 일시", auto_now_add=True)
 
     def __str__(self):
@@ -14,6 +15,7 @@ class University(models.Model):
     country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True)
     webpage = models.CharField("대학교 사이트 주소", max_length=255, null=True)
     name = models.CharField("대학교 이름", max_length=255, null=True, unique=True)
+    university_score = models.PositiveIntegerField("선호대학교 점수", default=0)
     created_at = models.DateTimeField("생성 일시", auto_now_add=True)
     
     def __str__(self):
