@@ -127,3 +127,24 @@ class SearchView(APIView):
         
         serializer = UniversitySerializer(search_list[start_obj:end_obj], many=True)
         return Response (serializer.data, status=status.HTTP_200_OK)
+
+class ReferenceView(APIView):
+    def post(self, request, university_id):
+        """
+        선호 대학 등록
+        """
+        user = request.user
+        university = University.objects.get(id=university_id)
+        
+        getted_obj, created_obj = UniversityPreference.objects.get_or_create(university=university, user=user)
+    
+        if created_obj:
+            if getted_obj.user.universitypreference_set.count() <= 20:
+                return Response({'detail': '선호 대학으로 등록했습니다'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'detail': '선호 대학은 20개까지만 가능합니다'}, status=status.HTTP_200_OK)
+        elif getted_obj.is_active == False:
+            getted_obj.is_active == True
+            getted_obj.save()
+            return Response({'detail': '선호 대학으로 등록했습니다'}, status=status.HTTP_200_OK)
+        return Response({'detail': '이미 선호 대학목록에 있습니다'}, status=status.HTTP_200_OK)
