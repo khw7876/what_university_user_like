@@ -8,6 +8,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from django.core.cache import cache
+
 from .models import Country, University, UniversityPreference
 from user.models import User
 
@@ -19,22 +21,42 @@ class UnivercityView(APIView):
     대학교에 관한 View
     """
     def get(self, request: Request) -> Response:
+        
         url = requests.get("http://universities.hipolabs.com/search")
         text = url.text
         data = json.loads(text)
-        country_name_list = []
-        country_code_list = []
         
-        for univercity_data in data:
-            if univercity_data["country"] not in country_name_list:
-                country_name_list.append(univercity_data["country"])
-                country_code_list.append(univercity_data['alpha_two_code'])
+        if not data == cache.get('data'):
+            cache.delete('data')
+            url = requests.get("http://universities.hipolabs.com/search")
+            text = url.text
+            data = json.loads(text)
+            cache.set('data', data)
+
+        data = cache.get('data')
+
+        if not cache.get('country_name_list'):
+            country_name_list = []
+            country_code_list = []
+
+            for univercity_data in data:
+                if univercity_data["country"] not in country_name_list:
+                    country_name_list.append(univercity_data["country"])
+                    country_code_list.append(univercity_data['alpha_two_code'])
+            cache.set('country_name_list', country_name_list)
+            cache.set('country_code_list', country_code_list)
+
+        country_name_list = cache.get('country_name_list')
+        country_code_list = cache.get('country_code_list')
+        
 
         for index, country_name in enumerate (country_name_list): 
             getted_country, created_country = Country.objects.get_or_create(name = country_name, code = country_code_list[index])
             if getted_country:
                 getted_country.country_score = 0
                 getted_country.save(update_fields=['country_score'])
+
+            
 
         for univercity_data in data:
             country_id = Country.objects.get(name = univercity_data["country"])
@@ -73,9 +95,7 @@ class UnivercityView(APIView):
             univ_obj.university_score = univ_preference_count + univ_count_score
             univ_obj.save(update_fields=['university_score'])
 
-        
-
-
+    
         return Response({"detail": "정보 저장이 완료되었습니다."}, status=status.HTTP_200_OK)
 
 
@@ -107,3 +127,37 @@ class SearchView(APIView):
         
         serializer = UniversitySerializer(search_list[start_obj:end_obj], many=True)
         return Response (serializer.data, status=status.HTTP_200_OK)
+
+class ReferenceView(APIView):
+    def post(self, request, university_id):
+        """
+        선호 대학 등록
+        """
+        user = request.user
+        university = University.objects.get(id=university_id)
+        
+        getted_obj, created_obj = UniversityPreference.objects.get_or_create(university=university, user=user)
+    
+        if created_obj:
+            if getted_obj.user.universitypreference_set.count() <= 20:
+                return Response({'detail': '선호 대학으로 등록했습니다'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'detail': '선호 대학은 20개까지만 가능합니다'}, status=status.HTTP_200_OK)
+        elif getted_obj.is_active == False:
+            getted_obj.is_active == True
+            getted_obj.save()
+            return Response({'detail': '선호 대학으로 등록했습니다'}, status=status.HTTP_200_OK)
+        return Response({'detail': '이미 선호 대학목록에 있습니다'}, status=status.HTTP_200_OK)
+
+
+    def delete(self, request, university_id):
+        """
+        선호 대학 삭제(soft delete)
+        """
+        user = request.user
+        university = University.objects.get(id=university_id)
+        
+        preferenced = UniversityPreference.objects.get(university=university, user=user)
+        preferenced.is_active = False
+        preferenced.save()
+        return Response({'detail': '선호 대학목록에서 제외했습니다'}, status=status.HTTP_200_OK)
