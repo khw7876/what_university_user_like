@@ -148,3 +148,16 @@ class ReferenceView(APIView):
             getted_obj.save()
             return Response({'detail': '선호 대학으로 등록했습니다'}, status=status.HTTP_200_OK)
         return Response({'detail': '이미 선호 대학목록에 있습니다'}, status=status.HTTP_200_OK)
+
+
+    def delete(self, request, university_id):
+        """
+        선호 대학 삭제(soft delete)
+        """
+        user = request.user
+        university = University.objects.get(id=university_id)
+        
+        preferenced = UniversityPreference.objects.get(university=university, user=user)
+        preferenced.is_active = False
+        preferenced.save()
+        return Response({'detail': '선호 대학목록에서 제외했습니다'}, status=status.HTTP_200_OK)
