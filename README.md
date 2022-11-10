@@ -129,7 +129,7 @@
   <summary>대학교 선호 순위를 매기기 위한 각 대학교의 점수를 구하는 로직</summary>
   <div markdown="1">
   
-  #### 4번째에서 구한 국가점수 + 각 대학교의 학생 수<br>
+  #### 4번째에서 구한 국가점수 + 각 대학교를 선호하는 학생 수<br>
     
     preference_data = UniversityPreference.objects.all().select_related("university")
         no_overlap_preference_univ_list = []
