@@ -7,52 +7,52 @@
   <div markdown="1">
   
   #### 대학교에 대한 정보가 들어있는 오픈소스에서 정보를 가져오기!<br>
-    <python>
-    
+  ```python
     def get(self, request: Request) -> Response:
-        
+    
+    url = requests.get("http://universities.hipolabs.com/search")
+    text = url.text
+    data = json.loads(text)
+    
+    if not data == cache.get('data'):
+        cache.delete('data')
         url = requests.get("http://universities.hipolabs.com/search")
         text = url.text
         data = json.loads(text)
-        
-        if not data == cache.get('data'):
-            cache.delete('data')
-            url = requests.get("http://universities.hipolabs.com/search")
-            text = url.text
-            data = json.loads(text)
-            cache.set('data', data)
+        cache.set('data', data)
 
-        data = cache.get('data')
+    data = cache.get('data')
 
-        if not cache.get('country_name_list'):
-            country_name_list = []
-            country_code_list = []
-
-            for univercity_data in data:
-                if univercity_data["country"] not in country_name_list:
-                    country_name_list.append(univercity_data["country"])
-                    country_code_list.append(univercity_data['alpha_two_code'])
-            cache.set('country_name_list', country_name_list)
-            cache.set('country_code_list', country_code_list)
-
-        country_name_list = cache.get('country_name_list')
-        country_code_list = cache.get('country_code_list')
-        
-
-        for index, country_name in enumerate (country_name_list): 
-            getted_country, created_country = Country.objects.get_or_create(name = country_name, code = country_code_list[index])
-            if getted_country:
-                getted_country.country_score = 0
-                getted_country.save(update_fields=['country_score'])
-
-            
+    if not cache.get('country_name_list'):
+        country_name_list = []
+        country_code_list = []
 
         for univercity_data in data:
-            country_id = Country.objects.get(name = univercity_data["country"])
-            if University.objects.filter(name=univercity_data["name"]):
-                University.objects.filter(name=univercity_data["name"]).update(university_score = 0)
-            else:
-                University.objects.get_or_create(name=univercity_data["name"], webpage = univercity_data["web_pages"][0], country=country_id)
+            if univercity_data["country"] not in country_name_list:
+                country_name_list.append(univercity_data["country"])
+                country_code_list.append(univercity_data['alpha_two_code'])
+        cache.set('country_name_list', country_name_list)
+        cache.set('country_code_list', country_code_list)
+
+    country_name_list = cache.get('country_name_list')
+    country_code_list = cache.get('country_code_list')
+    
+
+    for index, country_name in enumerate (country_name_list): 
+        getted_country, created_country = Country.objects.get_or_create(name = country_name, code = country_code_list[index])
+        if getted_country:
+            getted_country.country_score = 0
+            getted_country.save(update_fields=['country_score'])
+
+        
+
+    for univercity_data in data:
+        country_id = Country.objects.get(name = univercity_data["country"])
+        if University.objects.filter(name=univercity_data["name"]):
+            University.objects.filter(name=univercity_data["name"]).update(university_score = 0)
+        else:
+            University.objects.get_or_create(name=univercity_data["name"], webpage = univercity_data["web_pages"][0], country=country_id)
+  ```
   </div>
   </details>
   <details>
@@ -61,10 +61,10 @@
   
   #### Faker를 사용한 커스텀 커맨드를 이용하여 유저 더미데이터 생성!<br>
   
-  ```
+  ```python
   python manage.py seed_users --total ${생성할 유저의 수}
   ```
-  <python>
+  ```python
    
     class Command(BaseCommand):
 
@@ -89,6 +89,7 @@
               },
           )
           seeder.execute()
+  ```
   </div>
   </details>
   <details>
@@ -97,12 +98,12 @@
   
   #### 각 유저 한명당 20개의 선호 대학교를 랜덤으로 고를 수 있도록 하는 로직<br>
   #### random의 범위는 id = 0인 대학이 없으므로 총 10000개의 대학이 대상이기에 id = 1~9500 이 된다.<br>
-    
+  ```python
     all_user_queryset = User.objects.all()
         for user in all_user_queryset:
             while user.universitypreference_set.count() <= 20:
                 UniversityPreference.objects.create(user = user, university_id = randrange(1,9500))
-
+  ```
   </div>
   </details>
   <details>
@@ -110,6 +111,7 @@
   <div markdown="1">
   
   #### 만약 한국이 14개의 대학교를 지녔다면, 한국_score = 14<br>
+  ```python
     
     preference_data = UniversityPreference.objects.all().select_related("university")
         no_overlap_preference_univ_list = []
@@ -122,7 +124,7 @@
         for preference_univ_obj in no_overlap_preference_univ_list:
             country_query = Country.objects.filter(university__name = preference_univ_obj.university.name)
             country_query.update(country_score = country_query.get().country_score + 1)
-
+  ```
   </div>
   </details>
   <details>
@@ -130,7 +132,7 @@
   <div markdown="1">
   
   #### 4번째에서 구한 국가점수 + 각 대학교를 선호하는 학생 수<br>
-    
+  ```python
     preference_data = UniversityPreference.objects.all().select_related("university")
         no_overlap_preference_univ_list = []
         preference_univ_name_list = []
@@ -142,7 +144,7 @@
         for preference_univ_obj in no_overlap_preference_univ_list:
             country_query = Country.objects.filter(university__name = preference_univ_obj.university.name)
             country_query.update(country_score = country_query.get().country_score + 1)
-
+  ```
   </div>
   </details>
 
